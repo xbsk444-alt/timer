@@ -42,11 +42,10 @@
     <!-- Timer Application Container - 고정된 크기 유지를 위해 W/H 관련 Tailwind 클래스 제거, p-8 -> p-2로 축소 -->
     <div id="timer-app" class="bg-white p-2 rounded-2xl shadow-2xl transition-all duration-300">
 
-        <!-- 타이머 (Timer) - 폰트 크기 축소 (text-3xl -> text-xl) -->
-        <h1 class="text-xl font-extrabold text-center text-gray-800 mb-1">타이머</h1>
+        <!-- 기존의 <h1 class="text-xl ...">타이머</h1> 요소를 제거했습니다. -->
         
-        <!-- Quick Set Buttons Area (Stackable) - 2x2 레이아웃으로 변경 -->
-        <div id="quick-set-area" class="grid grid-cols-2 gap-1 sm:grid-cols-2 sm:gap-1 mb-2">
+        <!-- Quick Set Buttons Area (Stackable) - 2x2 레이아웃으로 변경. 타이틀 공간 확보를 위해 위쪽 마진 조정 -->
+        <div id="quick-set-area" class="grid grid-cols-2 gap-1 sm:grid-cols-2 sm:gap-1 mt-1 mb-2">
             <!-- First Row -->
             <button data-minutes="5" class="quick-set-btn bg-gray-700 hover:bg-gray-800 text-white font-semibold py-1 rounded-xl transition-colors duration-150 shadow-md hover:shadow-lg active:scale-95 text-xs">5분</button>
             <button data-minutes="15" class="quick-set-btn bg-gray-700 hover:bg-gray-800 text-white font-semibold py-1 rounded-xl transition-colors duration-150 shadow-md hover:shadow-lg active:scale-95 text-xs">15분</button>
@@ -55,14 +54,14 @@
             <button data-minutes="120" class="quick-set-btn bg-gray-700 hover:bg-gray-800 text-white font-semibold py-1 rounded-xl transition-colors duration-150 shadow-md hover:shadow-lg active:scale-95 text-xs">2시간</button>
         </div>
 
-        <!-- Time Display Area - 폰트 크기 축소 (text-7xl/8xl -> text-5xl) 및 마진 축소 -->
+        <!-- Time Display Area - 중앙 정렬 및 여백 조정 -->
         <div id="display-area" class="flex justify-center items-center mb-1">
             <span id="minutes-display" class="time-display text-red-600 transition-colors">00</span>
             <span class="time-display mx-1">:</span>
             <span id="seconds-display" class="time-display text-red-600 transition-colors">00</span>
         </div>
 
-        <!-- Control Buttons Area (Always visible) - 패딩/마진/폰트 크기 축소 -->
+        <!-- Control Buttons Area (Always visible) -->
         <div id="control-area" class="flex justify-center space-x-1" style="display:flex;">
             <button id="start-button" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-1 px-2 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 duration-150 text-sm">
                 시작 (Start)
@@ -75,7 +74,7 @@
             </button>
         </div>
         
-        <!-- Timer Completion Message - 패딩/폰트 크기 축소 -->
+        <!-- Timer Completion Message -->
         <div id="message-box" class="mt-1 p-1 bg-yellow-100 border-l-2 border-yellow-500 text-yellow-700 rounded-lg hidden text-center font-medium text-xs">
             시간 종료! (Time's Up!)
         </div>
