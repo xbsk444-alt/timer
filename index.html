@@ -42,8 +42,6 @@
     <!-- Timer Application Container - 고정된 크기 유지를 위해 W/H 관련 Tailwind 클래스 제거, p-8 -> p-2로 축소 -->
     <div id="timer-app" class="bg-white p-2 rounded-2xl shadow-2xl transition-all duration-300">
 
-        <!-- 기존의 <h1 class="text-xl ...">타이머</h1> 요소를 제거했습니다. -->
-        
         <!-- Quick Set Buttons Area (Stackable) - 2x2 레이아웃으로 변경. 타이틀 공간 확보를 위해 위쪽 마진 조정 -->
         <div id="quick-set-area" class="grid grid-cols-2 gap-1 sm:grid-cols-2 sm:gap-1 mt-1 mb-2">
             <!-- First Row -->
@@ -98,6 +96,10 @@
         const messageBox = $('message-box');
         const quickSetButtons = document.querySelectorAll('.quick-set-btn');
 
+        // Audio setup for completion sound (A simple high-frequency beep)
+        // Note: Using a minimal data URI for a very short beep to ensure the code is self-contained.
+        const completionSound = new Audio('data:audio/wav;base64,UklGRl9vT1JXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAAH4BQAA');
+
         // Utility: Format number with leading zero
         const formatTime = (value) => String(value).padStart(2, '0');
 
@@ -142,6 +144,9 @@
                 timerId = null;
                 updateDisplay(); 
                 
+                // Play completion sound
+                completionSound.play().catch(e => console.log("Audio play failed, possibly due to user interaction policy.", e));
+
                 messageBox.textContent = "시간 종료! (Time's Up!)";
                 messageBox.classList.remove('hidden');
                 
@@ -162,6 +167,18 @@
                 }
                 return;
             }
+
+            // Attempt to play a silent sound upon first user interaction to unlock audio context
+            // This is a common workaround for browser audio policies.
+            completionSound.volume = 0;
+            completionSound.play().then(() => {
+                completionSound.pause();
+                completionSound.currentTime = 0;
+                completionSound.volume = 1; // Restore volume
+            }).catch(e => {
+                console.log("Silent audio unlock failed.", e);
+            });
+
 
             isRunning = true;
             startButton.style.display = 'none';
