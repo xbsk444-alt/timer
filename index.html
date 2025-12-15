@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>타이머 앱</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font and basic styling */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+
+        /* --- 사용자 요청: 컨테이너 고정 크기 (10cm x 6cm) 설정 --- */
+        #timer-app {
+            width: 10cm; 
+            height: 6cm; 
+            overflow: hidden; /* 크기를 초과하는 내용은 숨김 */
+            box-sizing: border-box; 
+            /* 내부 콘텐츠를 수직으로 정렬하여 6cm 높이에 맞춥니다 */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Custom style for the large time display */
+        .time-display {
+            font-weight: 700;
+            color: #1f2937; /* Dark gray */
+            /* 6cm 높이에 맞추기 위해 font-size를 수동으로 조정합니다 */
+            font-size: 2.5rem !important; 
+            line-height: 1;
+        }
+    </style>
+</head>
+<!-- p-4 대신 p-1을 사용하여 중앙 정렬된 레이아웃을 유지합니다 -->
+<body class="flex items-center justify-center min-h-screen p-1">
+
+    <!-- Timer Application Container - 고정된 크기 유지를 위해 W/H 관련 Tailwind 클래스 제거, p-8 -> p-2로 축소 -->
+    <div id="timer-app" class="bg-white p-2 rounded-2xl shadow-2xl transition-all duration-300">
+
+        <!-- 타이머 (Timer) - 폰트 크기 축소 (text-3xl -> text-xl) -->
+        <h1 class="text-xl font-extrabold text-center text-gray-800 mb-1">타이머</h1>
+        
+        <!-- Quick Set Buttons Area (Stackable) - 2x2 레이아웃으로 변경 -->
+        <div id="quick-set-area" class="grid grid-cols-2 gap-1 sm:grid-cols-2 sm:gap-1 mb-2">
+            <!-- First Row -->
+            <button data-minutes="5" class="quick-set-btn bg-gray-700 hover:bg-gray-800 text-white font-semibold py-1 rounded-xl transition-colors duration-150 shadow-md hover:shadow-lg active:scale-95 text-xs">5분</button>
+            <button data-minutes="15" class="quick-set-btn bg-gray-700 hover:bg-gray-800 text-white font-semibold py-1 rounded-xl transition-colors duration-150 shadow-md hover:shadow-lg active:scale-95 text-xs">15분</button>
+            <!-- Second Row -->
+            <button data-minutes="30" class="quick-set-btn bg-gray-700 hover:bg-gray-800 text-white font-semibold py-1 rounded-xl transition-colors duration-150 shadow-md hover:shadow-lg active:scale-95 text-xs">30분</button>
+            <button data-minutes="120" class="quick-set-btn bg-gray-700 hover:bg-gray-800 text-white font-semibold py-1 rounded-xl transition-colors duration-150 shadow-md hover:shadow-lg active:scale-95 text-xs">2시간</button>
+        </div>
+
+        <!-- Time Display Area - 폰트 크기 축소 (text-7xl/8xl -> text-5xl) 및 마진 축소 -->
+        <div id="display-area" class="flex justify-center items-center mb-1">
+            <span id="minutes-display" class="time-display text-red-600 transition-colors">00</span>
+            <span class="time-display mx-1">:</span>
+            <span id="seconds-display" class="time-display text-red-600 transition-colors">00</span>
+        </div>
+
+        <!-- Control Buttons Area (Always visible) - 패딩/마진/폰트 크기 축소 -->
+        <div id="control-area" class="flex justify-center space-x-1" style="display:flex;">
+            <button id="start-button" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-1 px-2 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 duration-150 text-sm">
+                시작 (Start)
+            </button>
+            <button id="pause-button" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-1 px-2 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 duration-150 text-sm" style="display:none;">
+                일시정지 (Pause)
+            </button>
+            <button id="reset-button" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-1 px-2 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 duration-150 text-sm">
+                초기화 (Reset)
+            </button>
+        </div>
+        
+        <!-- Timer Completion Message - 패딩/폰트 크기 축소 -->
+        <div id="message-box" class="mt-1 p-1 bg-yellow-100 border-l-2 border-yellow-500 text-yellow-700 rounded-lg hidden text-center font-medium text-xs">
+            시간 종료! (Time's Up!)
+        </div>
+
+    </div>
+
+    <script>
+        // Global state variables
+        let duration = 0; // 남은 시간 (초)
+        let initialDuration = 0; // 누적된 총 시간 (초)
+        let timerId = null; // setInterval ID
+        let isRunning = false;
+        
+        // DOM Elements (Simplified access)
+        const $ = id => document.getElementById(id);
+        const minutesDisplay = $('minutes-display');
+        const secondsDisplay = $('seconds-display');
+        const startButton = $('start-button');
+        const pauseButton = $('pause-button');
+        const resetButton = $('reset-button');
+        const messageBox = $('message-box');
+        const quickSetButtons = document.querySelectorAll('.quick-set-btn');
+
+        // Utility: Format number with leading zero
+        const formatTime = (value) => String(value).padStart(2, '0');
+
+        // Function to update the time display and colors (Optimized logic)
+        const updateDisplay = () => {
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            
+            minutesDisplay.textContent = formatTime(minutes);
+            secondsDisplay.textContent = formatTime(seconds);
+
+            const isNearEnd = duration <= 10 && duration > 0;
+            const isFinished = duration === 0;
+            
+            // Determine color based on state
+            let color;
+            if (isFinished) {
+                color = 'text-gray-800'; // Finished state color
+            } else if (isNearEnd) {
+                color = 'text-yellow-500'; // Warning state color
+            } else {
+                color = 'text-red-600'; // Running state color
+            }
+
+            // Apply color by clearing existing and adding new one
+            [minutesDisplay, secondsDisplay].forEach(el => {
+                el.classList.remove('text-red-600', 'text-yellow-500', 'text-gray-800');
+                el.classList.add(color);
+            });
+        };
+
+        // Core countdown logic
+        const tick = () => {
+            if (duration > 0) {
+                duration--;
+                updateDisplay();
+                messageBox.classList.add('hidden');
+            } else {
+                // Timer finished
+                clearInterval(timerId);
+                isRunning = false;
+                timerId = null;
+                updateDisplay(); 
+                
+                messageBox.textContent = "시간 종료! (Time's Up!)";
+                messageBox.classList.remove('hidden');
+                
+                startButton.style.display = 'block';
+                pauseButton.style.display = 'none';
+                startButton.disabled = true;
+                resetButton.disabled = false;
+                initialDuration = 0;
+            }
+        };
+
+        // Start button handler
+        const startTimer = () => {
+            if (isRunning || duration <= 0) {
+                if (duration <= 0) {
+                    messageBox.textContent = "시간을 추가해주세요. (Please add time.)";
+                    messageBox.classList.remove('hidden');
+                }
+                return;
+            }
+
+            isRunning = true;
+            startButton.style.display = 'none';
+            pauseButton.style.display = 'block';
+            
+            timerId = setInterval(tick, 1000);
+            messageBox.classList.add('hidden');
+        };
+
+        // Pause button handler
+        const pauseTimer = () => {
+            if (!isRunning) return;
+
+            isRunning = false;
+            clearInterval(timerId);
+            timerId = null;
+            startButton.style.display = 'block';
+            pauseButton.style.display = 'none';
+            messageBox.textContent = "일시정지됨 (Paused)";
+            messageBox.classList.remove('hidden');
+            startButton.disabled = false;
+        };
+
+        // Reset button handler
+        const resetTimer = () => {
+            clearInterval(timerId);
+            timerId = null;
+            isRunning = false;
+            
+            duration = 0; 
+            initialDuration = 0;
+            
+            updateDisplay();
+
+            startButton.style.display = 'block';
+            pauseButton.style.display = 'none';
+            startButton.disabled = true;
+            resetButton.disabled = true;
+            
+            // Hide message box if it was visible
+            messageBox.classList.add('hidden');
+        };
+
+        // Function to quickly set and prepare the timer (STACKABLE)
+        const quickSetDuration = (totalMinutes) => {
+            const timeToAdd = totalMinutes * 60;
+            
+            // Add time to current duration
+            duration += timeToAdd;
+            initialDuration += timeToAdd; 
+            
+            updateDisplay();
+            messageBox.classList.add('hidden');
+            
+            startButton.disabled = false;
+            resetButton.disabled = false;
+
+            // Start automatically if stopped and time is available
+            if (!isRunning && timerId === null && duration > 0) {
+                startTimer(); 
+            }
+        };
+
+        // --- Event Listeners ---
+        window.onload = () => {
+            // Initial setup
+            updateDisplay();
+
+            startButton.disabled = true;
+            resetButton.disabled = true;
+            
+            startButton.addEventListener('click', startTimer);
+            pauseButton.addEventListener('click', pauseTimer);
+            resetButton.addEventListener('click', resetTimer);
+
+            // Add event listeners for quick set buttons
+            quickSetButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const totalMinutes = parseInt(button.dataset.minutes);
+                    quickSetDuration(totalMinutes);
+                });
+            });
+        };
+
+    </script>
+</body>
+</html>
